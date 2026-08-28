@@ -1,0 +1,12 @@
+# storage — オブジェクトストレージ（S3）。
+#
+# 責務: ファイルの保存・取得・署名付きURL発行
+#
+# identity に依存しない（誰がアップロードしたかは呼び出し側が決める）。
+enforce_dependencies: true
+enforce_privacy: true
+
+dependencies:
+  # Rails の基底クラス(ApplicationRecord / ApplicationJob)のみ。
+  # 継承のための依存であって、機能的な結合ではない。
+  - packages/shared
