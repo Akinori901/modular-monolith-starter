@@ -1,0 +1,14 @@
+# archiving — ログのアーカイブ（DynamoDB）。
+#
+# 責務: 監査ログ・アクセスログの永続化と検索
+#
+# **他パッケージに依存しない。** 「誰の」「何の」ログかは
+# 呼び出し側が値として渡す。identity を参照し始めると
+# アーカイブが認証の都合に縛られる。
+enforce_dependencies: true
+enforce_privacy: true
+
+dependencies:
+  # Rails の基底クラス(ApplicationRecord / ApplicationJob)のみ。
+  # 継承のための依存であって、機能的な結合ではない。
+  - packages/shared
