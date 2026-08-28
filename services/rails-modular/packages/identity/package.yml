@@ -1,0 +1,14 @@
+# identity — 認証パッケージ（Cognito）。
+#
+# 責務: サインイン・トークン検証・ユーザーの解決
+#
+# **他パッケージに依存しない。** アーカイブしたい出来事は
+# 「イベントを publish する」形にし、archiving を直接呼ばない。
+# 依存を作ると、認証が監査ログの都合に引きずられる。
+enforce_dependencies: true
+enforce_privacy: true
+
+dependencies:
+  # Rails の基底クラス(ApplicationRecord / ApplicationJob)のみ。
+  # 継承のための依存であって、機能的な結合ではない。
+  - packages/shared

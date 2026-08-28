@@ -1,0 +1,13 @@
+# ルートパッケージ（app/ 配下＝Controller 等）。
+#
+# **依存してよいのは各パッケージの public/ だけ。**
+# packages/identity/app/services/... のような内部実装を直接触ると
+# bin/packwerk check が落ちる。
+enforce_dependencies: true
+enforce_privacy: true
+
+dependencies:
+  - packages/shared
+  - packages/identity
+  - packages/storage
+  - packages/archiving
