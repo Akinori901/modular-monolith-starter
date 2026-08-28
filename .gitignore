@@ -1,0 +1,28 @@
+# 秘密情報は絶対にコミットしない。
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+
+# 依存
+/node_modules/
+vendor/bundle/
+.bundle/
+
+# Rails
+services/*/log/*
+services/*/tmp/*
+services/*/storage/*
+!services/*/storage/.keep
+services/*/public/assets
+
+# cognito-local が実行時に作る状態ファイル（テストユーザー等）。
+# make seed で環境ごとに作り直すため、リポジトリには含めない。
+docker/cognito/db/
+
+# OS / エディタ
+.DS_Store
+.idea/
+*.swp
