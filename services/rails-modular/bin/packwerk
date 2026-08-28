@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "rubygems"
+require "bundler/setup"
+require "packwerk"
+
+cli = Packwerk::Cli.new
+result = cli.execute_command(ARGV)
+exit(result)

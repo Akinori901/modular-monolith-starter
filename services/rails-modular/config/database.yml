@@ -1,0 +1,25 @@
+# PostgreSQL。
+#
+# DATABASE_URL があればそちらを優先する（Lambda / 本番はこちら）。
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  # Lambda では実行環境が再利用されるため、コネクションは絞る。
+  # RDS Proxy を挟む場合はさらに小さくしてよい。
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  port: <%= ENV.fetch("DB_PORT", 5432) %>
+  username: <%= ENV.fetch("DB_USERNAME", "app") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "app") %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME", "app_development") %>
+
+test:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME", "app_test") %>
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME", "app") %>
