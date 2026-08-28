@@ -4,6 +4,15 @@
 
 [clean-arch-starter](https://github.com/Akinori901/clean-arch-starter) の**対になるリポジトリ**です。
 
+<p>
+  <img alt="Ruby / Rails" src="https://img.shields.io/badge/Rails_8.1-modular_monolith-CC0000?logo=rubyonrails&logoColor=white">
+  <img alt="packwerk" src="https://img.shields.io/badge/packwerk-境界検証-2ea44f">
+  <img alt="CakePHP" src="https://img.shields.io/badge/CakePHP-予定-D33C43?logo=cakephp&logoColor=white">
+  <img alt="Phoenix" src="https://img.shields.io/badge/Phoenix-予定-FD4F00?logo=elixir&logoColor=white">
+  <img alt="AWS" src="https://img.shields.io/badge/AWS-Lambda_/_DynamoDB-232F3E?logo=amazonwebservices&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
+</p>
+
 ## なぜ2つに分かれているのか
 
 「レイヤード化できないフレームワークは諦める」ではありません。**切り方の軸が違うだけ**です。
