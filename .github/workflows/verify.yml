@@ -1,0 +1,71 @@
+# パッケージ境界の検証。
+#
+# ここが落ちたらデプロイへ進まない。
+# 規約を文章で配るだけでは守られないため、CI で落ちる形にしてある。
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  rails:
+    name: Rails (パッケージ境界の検証)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/rails-modular
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      RAILS_ENV: test
+      DB_HOST: localhost
+      DB_NAME: app_test
+      DB_USERNAME: app
+      DB_PASSWORD: app
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+          working-directory: services/rails-modular
+
+      # ── ここが本丸 ──
+      # RuboCop も Brakeman も「パッケージ境界」は見ない。
+      # 「Controller が他パッケージの内部実装を触っていないか」は
+      # 専用のツールが要る。
+      - name: 設定の妥当性を検証（packwerk validate）
+        run: bin/packwerk validate
+
+      - name: パッケージ境界を検証（packwerk check）
+        run: bin/packwerk check
+
+      - name: 静的解析（RuboCop）
+        run: bin/rubocop
+
+      - name: セキュリティ（Brakeman）
+        run: bin/brakeman --no-pager -q
+
+      - name: DB 準備
+        run: bin/rails db:create db:schema:load
+
+      - name: テスト（RSpec）
+        run: bundle exec rspec
