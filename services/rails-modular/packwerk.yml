@@ -1,0 +1,32 @@
+# packwerk の設定。
+#
+# .claude/rules/10-rails-modular.md のパッケージ依存表を、
+# そのまま機械検知できる形にしたもの。
+# 規約を文章で配るだけでは守られない。CI で落ちる形にして初めてルールになる。
+#
+# 使い方:
+#   bin/packwerk check          # 違反の検出
+#   bin/packwerk update-todo    # 既知違反のベースライン登録
+include:
+  - "app/**/*.rb"
+  - "packages/**/*.rb"
+
+exclude:
+  - "**/node_modules/**"
+  - "**/vendor/**"
+  - "tmp/**"
+
+# privacy（公開面の強制）は packwerk 3.x では本体から分離されている。
+# require しないと package.yml の enforce_privacy が無視される。
+require:
+  - packwerk-extensions
+
+# 各パッケージの public/ 配下だけが「外から触ってよい面」になる。
+# これ以外（models / services / gateways / use_cases）は内部実装。
+public_path: app/public/
+
+# 定数が解決できないと検査漏れになるため、Rails の autoload path を渡す。
+load_paths:
+  - app/controllers
+  - app/jobs
+  - app/models
