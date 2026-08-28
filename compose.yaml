@@ -1,0 +1,156 @@
+# ローカル開発環境。
+#
+# 本番（AWS）との差分は **エンドポイント URL だけ** に閉じ込める。
+# アプリコードに `if Rails.env.development?` を書かないこと。
+name: modular-monolith-starter
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app_development
+      TZ: Asia/Tokyo
+    ports:
+      - "15432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # ログのアーカイブ先。本番は DynamoDB、ローカルはこの公式エミュレータ。
+  # 同じ SDK・同じコードパスを通す（endpoint の差し替えのみ）。
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    command: -jar DynamoDBLocal.jar -inMemory -sharedDb
+    ports:
+      - "18000:8000"
+    healthcheck:
+      # DynamoDB Local は認証エラー(400)を返しても「起きている」証拠になる
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8000 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  # S3 互換オブジェクトストレージ。
+  # MinIO は 2026-04 にリポジトリが archived になったため SeaweedFS を使う。
+  storage:
+    image: chrislusf/seaweedfs:latest
+    command: 'server -dir=/data -s3 -s3.port=8333 -master.volumeSizeLimitMB=64'
+    ports:
+      # clean-arch-starter と同時に起動できるよう、ホスト側をずらす
+      # （コンテナ内は 8333 のままなので、アプリの設定は変わらない）
+      - "18333:8333"
+      - "19333:9333"
+    volumes:
+      - storage-data:/data
+    healthcheck:
+      # master(9333) が上がっていても S3 ゲートウェイが未起動なことがあるため、
+      # S3 API のポートを直接見る。
+      test: ["CMD", "curl", "-sf", "-o", "/dev/null", "http://localhost:8333/"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Cognito エミュレータ。本番は実 Cognito。
+  cognito:
+    image: jagregory/cognito-local:latest
+    ports:
+      - "19229:9229"
+    volumes:
+      - ./docker/cognito:/app/.cognito
+
+  # 非同期ジョブ（アクセスログのアーカイブ等）のキュー
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # バケットとテーブルを作るだけの使い捨てコンテナ。冪等。
+  aws-init:
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    depends_on:
+      storage:
+        condition: service_healthy
+      dynamodb:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: localsecret
+      AWS_DEFAULT_REGION: ap-northeast-1
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: ["bash", "/scripts/init-aws.sh"]
+
+  rails: &rails
+    build:
+      context: ./services/rails-modular
+      dockerfile: ../../docker/rails/Dockerfile
+      target: dev
+    command: bin/rails server -b 0.0.0.0 -p 3000
+    environment: &rails-env
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_NAME: app_development
+      DB_USERNAME: app
+      DB_PASSWORD: app
+      REDIS_URL: redis://redis:6379/0
+      AWS_REGION: ap-northeast-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: localsecret
+      S3_BUCKET: app-uploads
+      S3_ENDPOINT: http://storage:8333
+      DYNAMODB_TABLE: app-logs
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      COGNITO_ENDPOINT: http://cognito:9229
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-local_pool}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID:-local-client-id}
+      # cognito-local は自分の公開URL(localhost)を iss に刻む一方、
+      # コンテナからは cognito:9229 でしか到達できない。両者を分けて指定する。
+      COGNITO_ISSUER_OVERRIDE: http://localhost:19229/${COGNITO_USER_POOL_ID:-local_pool}
+      COGNITO_JWKS_URL_OVERRIDE: http://cognito:9229/${COGNITO_USER_POOL_ID:-local_pool}/.well-known/jwks.json
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/rails-modular:/app
+      - bundle-cache:/usr/local/bundle
+    depends_on:
+      db:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      dynamodb:
+        condition: service_healthy
+
+  # 非同期アーカイブのワーカー。
+  # 同じイメージ・同じ設定で、起動コマンドだけ変える。
+  worker:
+    <<: *rails
+    command: bundle exec sidekiq -q archiving -q default
+    environment:
+      <<: *rails-env
+    ports: []
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      dynamodb:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  storage-data:
+  bundle-cache:

@@ -1,0 +1,10 @@
+{
+  "UserPoolDefaults": {
+    "UsernameAttributes": [
+      "email"
+    ]
+  },
+  "TokenConfig": {
+    "IssuerDomain": "http://localhost:19229"
+  }
+}
