@@ -32,11 +32,20 @@ defmodule App.Archiving.IdentityEventSubscriber do
 
   @handler_id "archiving-identity-events"
 
+  @doc """
+  購読しているイベント名。
+
+  依存を切っている代償として、イベント名は identity 側と
+  **別々に**書かれている。片方だけ変えると黙って届かなくなるため、
+  テストで両者の一致を突き合わせられるように公開する。
+  """
+  def subscribed_events, do: [@sign_in, @sign_in_failure]
+
   @doc "起動時に1度だけ呼ぶ。"
   def attach do
     :telemetry.attach_many(
       @handler_id,
-      [@sign_in, @sign_in_failure],
+      subscribed_events(),
       &__MODULE__.handle_event/4,
       nil
     )
