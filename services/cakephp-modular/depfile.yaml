@@ -1,0 +1,120 @@
+# モジュール境界チェック（deptrac）
+#
+# .claude/rules/30-cakephp-modular.md のモジュール依存表を、
+# そのまま機械検知できる形にしたもの。
+# 規約を文章で配るだけでは守られない。CI で落ちる形にして初めてルールになる。
+#
+# **層ではなくモジュールの軸で使っている点に注意。**
+# clean-arch-starter の Laravel 版では同じ deptrac を「層」の検証に使っているが、
+# ここでは「機能モジュールの境界」を見る。ツールは同じでも軸が違う。
+#
+# 使い方:
+#   composer require --dev deptrac/deptrac
+#   ./vendor/bin/deptrac analyse --config-file=depfile.yaml
+parameters:
+  paths:
+    - ./modules
+    - ./src
+
+  exclude_files:
+    - '#.*Test\.php#'
+
+  # 既存コードから始める場合、既知の違反はここにベースライン登録してよい。
+  # ただし新たな違反は追加しないこと（減らしていく対象であって逃げ道ではない）。
+  # 空のまま維持できているなら、そのモジュール分割は完全準拠している。
+  skip_violations: []
+
+  layers:
+    # ── 各モジュールの「公開面」──────────────────────────────
+    # ここに置いたものだけが、他モジュール・アプリ本体から見える。
+    # packwerk の public/ に相当する。
+    - name: IdentityPublic
+      collectors:
+        - type: classLike
+          value: '^Identity\\Public\\.*'
+
+    - name: StoragePublic
+      collectors:
+        - type: classLike
+          value: '^Storage\\Public\\.*'
+
+    - name: ArchivingPublic
+      collectors:
+        - type: classLike
+          value: '^Archiving\\Public\\.*'
+
+    # ── 各モジュールの「内部実装」────────────────────────────
+    # Public 以外はすべて内部。外から参照したら違反。
+    #
+    # 否定先読みで Public を除外している。これが無いと
+    # 「Identity\Public も Identity 内部」に含まれ、判定が壊れる。
+    - name: IdentityInternal
+      collectors:
+        - type: classLike
+          value: '^Identity\\(?!Public\\).*'
+
+    - name: StorageInternal
+      collectors:
+        - type: classLike
+          value: '^Storage\\(?!Public\\).*'
+
+    - name: ArchivingInternal
+      collectors:
+        - type: classLike
+          value: '^Archiving\\(?!Public\\).*'
+
+    # ── アプリ本体（Controller 等）────────────────────────────
+    - name: App
+      collectors:
+        - type: classLike
+          value: '^App\\.*'
+
+    # ── 共有基盤 ─────────────────────────────────────────────
+    - name: Shared
+      collectors:
+        - type: classLike
+          value: '^Shared\\.*'
+
+  ruleset:
+    # アプリ本体は各モジュールの**公開面だけ**を触ってよい。
+    # Identity\Model\Table\UsersTable のような内部実装を直接呼ぶと落ちる。
+    App:
+      - IdentityPublic
+      - StoragePublic
+      - ArchivingPublic
+      - Shared
+
+    # 公開面は自モジュールの内部実装を使ってよい（それが役目）。
+    IdentityPublic:
+      - IdentityInternal
+      - Shared
+
+    StoragePublic:
+      - StorageInternal
+      - Shared
+
+    ArchivingPublic:
+      - ArchivingInternal
+      - Shared
+
+    # ── ここが最重要 ─────────────────────────────────────────
+    # **内部実装は他モジュールを一切参照しない。**
+    #
+    # Identity が Archiving を直接呼びたくなったら、それはイベントで繋ぐ合図。
+    # 直接呼ぶと認証が監査ログの都合に引きずられる。
+    # 連携は Cake\Event 経由で行い、依存の向きを切る
+    # （Archiving\Listener が Identity のイベントを購読する）。
+    IdentityInternal:
+      - Shared
+
+    StorageInternal:
+      - Shared
+
+    # Archiving の内部実装だけは自モジュールの公開面を参照してよい。
+    # Listener が ArchivingApi を呼ぶため（同一モジュール内の往復）。
+    ArchivingInternal:
+      - ArchivingPublic
+      - Shared
+
+    # 依存先なし（末端）
+    Shared: []
