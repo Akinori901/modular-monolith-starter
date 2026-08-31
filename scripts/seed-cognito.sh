@@ -57,8 +57,8 @@ fi
 cat <<MSG
 
 --------------------------------------------------------------
-ローカル Cognito の準備ができました。以下を compose.yaml の
-環境変数（django / laravel / frontend）へ反映してください。
+ローカル Cognito の準備ができました。以下をリポジトリ直下の
+.env へ書き写してください（compose.yaml が読み、各スタックへ渡します）。
 
   COGNITO_USER_POOL_ID=${POOL_ID}
   COGNITO_CLIENT_ID=${CLIENT_ID}
