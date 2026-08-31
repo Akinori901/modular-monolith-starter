@@ -86,7 +86,13 @@ defmodule App.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       # ローカルでの検証。CI（.github/workflows/verify.yml）と同じ順序。
-      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "credo", "test"]
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "credo",
+        "test"
+      ]
     ]
   end
 end

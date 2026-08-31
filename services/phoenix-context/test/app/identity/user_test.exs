@@ -22,12 +22,13 @@ defmodule App.Identity.UserTest do
   end
 
   test "表示名は50文字まで" do
-    changeset = User.changeset(%User{}, %{
-      id: "sub-1",
-      email: "taro@example.com",
-      display_name: String.duplicate("あ", 51),
-      active: true
-    })
+    changeset =
+      User.changeset(%User{}, %{
+        id: "sub-1",
+        email: "taro@example.com",
+        display_name: String.duplicate("あ", 51),
+        active: true
+      })
 
     refute changeset.valid?
     assert %{display_name: _} = errors_on(changeset)

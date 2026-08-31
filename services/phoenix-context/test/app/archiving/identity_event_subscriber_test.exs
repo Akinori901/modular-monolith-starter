@@ -6,12 +6,13 @@ defmodule App.Archiving.IdentityEventSubscriberTest do
 
   use ExUnit.Case, async: false
 
+  alias App.Archiving.IdentityEventSubscriber
   alias App.Identity.AuditPublisher
 
   # 本番の購読者は DynamoDB へ書きに行ってしまうので、
   # このテストの間だけ外して、届いたことだけを確かめる差し替えを入れる。
   setup do
-    App.Archiving.IdentityEventSubscriber.detach()
+    IdentityEventSubscriber.detach()
     test_pid = self()
 
     :telemetry.attach_many(
@@ -58,7 +59,7 @@ defmodule App.Archiving.IdentityEventSubscriberTest do
     #
     # **これが「疎結合の代金」。** 依存を切ると、繋がっていることの保証は
     # 型ではなくテストが持つことになる。
-    subscribed = App.Archiving.IdentityEventSubscriber.subscribed_events()
+    subscribed = IdentityEventSubscriber.subscribed_events()
 
     assert AuditPublisher.sign_in_event() in subscribed
     assert AuditPublisher.sign_in_failure_event() in subscribed

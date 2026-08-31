@@ -28,14 +28,14 @@ defmodule App.Application do
 
   @impl true
   def start(_type, _args) do
+    # 各 Context が「自分に必要な常駐プロセス」を自分で答える。
+    # 起動側は内部モジュールの名前を知らない。
     children =
       [
         AppWeb.Telemetry,
         App.Repo,
         {Phoenix.PubSub, name: App.PubSub}
       ] ++
-        # 各 Context が「自分に必要な常駐プロセス」を自分で答える。
-        # 起動側は内部モジュールの名前を知らない。
         App.Identity.children() ++
         App.Archiving.children() ++
         [AppWeb.Endpoint]

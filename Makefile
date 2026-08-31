@@ -3,7 +3,7 @@
 # CI（.github/workflows/verify.yml）と同じコマンドをローカルでも流せるようにする。
 # 「CI でだけ落ちる」状態を作らないため。
 .DEFAULT_GOAL := help
-.PHONY: help up down clean logs seed migrate verify verify-rails fmt
+.PHONY: help up down clean logs seed migrate verify verify-rails verify-cakephp verify-phoenix fmt
 
 DC := docker compose
 
@@ -15,7 +15,9 @@ help: ## このヘルプを表示
 up: ## 全サービスを起動（バケット・テーブルも作成）
 	$(DC) up -d
 	$(DC) up aws-init
-	@echo "  Rails : http://localhost:3000/api/health"
+	@echo "  Rails   : http://localhost:3000/api/health"
+	@echo "  CakePHP : http://localhost:8765/api/health"
+	@echo "  Phoenix : http://localhost:4000/api/health"
 
 down: ## 停止（ボリュームは残す）
 	$(DC) down
@@ -31,11 +33,12 @@ seed: ## ローカル Cognito にプールとテストユーザーを作る
 	$(DC) run --rm --entrypoint bash \
 	  -e COGNITO_ENDPOINT_URL=http://cognito:9229 aws-init /scripts/seed-cognito.sh
 
-migrate: ## DB マイグレーション
+migrate: ## DB マイグレーション（各スタックとも DB 名は分けてある）
 	$(DC) run --rm rails bin/rails db:create db:migrate
+	$(DC) run --rm phoenix mix ecto.setup
 
 ## ── 検証（CI と同じ内容）──────────────────────────────────
-verify: verify-rails verify-cakephp ## パッケージ境界の検証 + 静的解析 + テスト
+verify: verify-rails verify-cakephp verify-phoenix ## パッケージ境界の検証 + 静的解析 + テスト
 
 verify-cakephp: ## CakePHP: モジュール境界検証(deptrac) + 静的解析 + テスト
 	@echo "==> CakePHP モジュール境界検証"
@@ -55,5 +58,18 @@ verify-rails: ## Rails: パッケージ境界(packwerk) + RuboCop + RSpec + Brak
 	@echo "==> テスト"
 	$(DC) run --rm rails bundle exec rspec
 
+verify-phoenix: ## Phoenix: Context境界(boundary) + Credo + ExUnit
+	@echo "==> Context 境界の検証"
+	# boundary は**コンパイラ**なので、境界違反はコンパイル警告として出る。
+	# --warnings-as-errors を付けて初めて「落ちる」形になる。
+	# packwerk と違い別コマンドが要らず、検証を忘れようがない。
+	$(DC) run --rm -e MIX_ENV=test -e DB_NAME=app_phoenix_test phoenix \
+	  mix compile --force --warnings-as-errors
+	@echo "==> 静的解析"
+	$(DC) run --rm -e MIX_ENV=test -e DB_NAME=app_phoenix_test phoenix mix credo
+	@echo "==> テスト"
+	$(DC) run --rm -e MIX_ENV=test -e DB_NAME=app_phoenix_test phoenix mix test
+
 fmt: ## フォーマット
 	$(DC) run --rm rails bin/rubocop -a
+	$(DC) run --rm phoenix mix format

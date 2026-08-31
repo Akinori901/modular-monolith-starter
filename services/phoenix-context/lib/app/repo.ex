@@ -11,7 +11,11 @@ defmodule App.Repo do
   土台が機能を知り始めると、依存が土台経由で一周してしまう。
   """
 
-  use Boundary, top_level?: true, type: :strict, deps: [Ecto, Ecto.Repo, Ecto.Adapters.SQL, Ecto.Adapters.Postgres], exports: []
+  use Boundary,
+    top_level?: true,
+    type: :strict,
+    deps: [Ecto, Ecto.Repo, Ecto.Adapters.SQL, Ecto.Adapters.Postgres],
+    exports: []
 
   use Ecto.Repo,
     otp_app: :app,

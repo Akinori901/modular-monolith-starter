@@ -66,25 +66,25 @@ config :ex_aws,
   region: region
 
 config :ex_aws,
-  :s3,
-  Keyword.merge(
-    [region: region],
-    parse_endpoint.(blank_to_nil.(System.get_env("S3_ENDPOINT")))
-  )
+       :s3,
+       Keyword.merge(
+         [region: region],
+         parse_endpoint.(blank_to_nil.(System.get_env("S3_ENDPOINT")))
+       )
 
 config :ex_aws,
-  :dynamodb,
-  Keyword.merge(
-    [region: region],
-    parse_endpoint.(blank_to_nil.(System.get_env("DYNAMODB_ENDPOINT")))
-  )
+       :dynamodb,
+       Keyword.merge(
+         [region: region],
+         parse_endpoint.(blank_to_nil.(System.get_env("DYNAMODB_ENDPOINT")))
+       )
 
 config :ex_aws,
-  :"cognito-idp",
-  Keyword.merge(
-    [region: region],
-    parse_endpoint.(blank_to_nil.(System.get_env("COGNITO_ENDPOINT")))
-  )
+       :"cognito-idp",
+       Keyword.merge(
+         [region: region],
+         parse_endpoint.(blank_to_nil.(System.get_env("COGNITO_ENDPOINT")))
+       )
 
 if config_env() == :prod do
   database_url =
@@ -110,6 +110,9 @@ if config_env() == :prod do
 
   config :app, AppWeb.Endpoint,
     url: [host: System.get_env("PHX_HOST") || "example.com", port: 443, scheme: "https"],
-    http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT") || "4000")],
+    http: [
+      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      port: String.to_integer(System.get_env("PORT") || "4000")
+    ],
     secret_key_base: secret_key_base
 end

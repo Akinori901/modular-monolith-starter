@@ -30,8 +30,9 @@ defmodule App.Archiving.DynamoGateway do
       "owner_id" => to_string(owner_id),
       "occurred_at" => timestamp,
       # TTL。保持期間を過ぎたら DynamoDB が勝手に消す。
-      "expires_at" => DateTime.add(occurred_at, retention_days() * 86_400, :second)
-                      |> DateTime.to_unix(),
+      "expires_at" =>
+        DateTime.add(occurred_at, retention_days() * 86_400, :second)
+        |> DateTime.to_unix(),
       "payload" => stringify(payload)
     }
 
