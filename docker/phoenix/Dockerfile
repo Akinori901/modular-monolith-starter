@@ -14,7 +14,11 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 
 ENV MIX_HOME=/opt/mix \
     HEX_HOME=/opt/hex \
-    ERL_AFLAGS="-kernel shell_history enabled"
+    ERL_AFLAGS="-kernel shell_history enabled" \
+    # hex は取りこぼすことがある。並列を落として待ち時間を伸ばす。
+    # 無いとネットワークが少し不安定なだけでビルドが落ちる（実際に踏んだ）。
+    HEX_HTTP_CONCURRENCY=1 \
+    HEX_HTTP_TIMEOUT=120
 
 RUN mix local.hex --force && mix local.rebar --force
 
@@ -46,7 +50,14 @@ RUN mix release
 
 # ── 実行用 ───────────────────────────────────────────────────
 # Erlang のランタイムだけを積む。Elixir も Mix も要らない。
-FROM debian:bookworm-slim AS runtime
+#
+# **ベースは builder と同じ Debian のバージョンに揃えること。**
+# リリースには builder 側の ERTS（beam.smp / epmd）がそのまま入るため、
+# 実行側の glibc が古いと起動時に
+#   beam.smp: /lib/.../libc.so.6: version `GLIBC_2.38' not found
+# で落ちる。elixir:1.18-slim は Debian 13(trixie/glibc 2.41) なので、
+# bookworm(glibc 2.36) を実行側に使うと動かない（実際に踏んだ）。
+FROM debian:trixie-slim AS runtime
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
         ca-certificates libstdc++6 openssl libncurses6 locales \
     && rm -rf /var/lib/apt/lists/* \
