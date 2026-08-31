@@ -1,0 +1,10 @@
+# Mix のビルド成果物と依存
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+app-*.tar
+/tmp/
