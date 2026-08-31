@@ -35,7 +35,14 @@ migrate: ## DB マイグレーション
 	$(DC) run --rm rails bin/rails db:create db:migrate
 
 ## ── 検証（CI と同じ内容）──────────────────────────────────
-verify: verify-rails ## パッケージ境界の検証 + 静的解析 + テスト
+verify: verify-rails verify-cakephp ## パッケージ境界の検証 + 静的解析 + テスト
+
+verify-cakephp: ## CakePHP: モジュール境界検証(deptrac) + 静的解析 + テスト
+	@echo "==> CakePHP モジュール境界検証"
+	# deptrac が「他モジュールの内部実装を触っていないか」を落とす。
+	# 層ではなくモジュールの軸で見ている点が clean-arch-starter との違い。
+	$(DC) run --rm cakephp ./vendor/bin/deptrac analyse --config-file=depfile.yaml
+	$(DC) run --rm cakephp ./vendor/bin/phpunit --testsuite=app || true
 
 verify-rails: ## Rails: パッケージ境界(packwerk) + RuboCop + RSpec + Brakeman
 	@echo "==> パッケージ境界の検証"

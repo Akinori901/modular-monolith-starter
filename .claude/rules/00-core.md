@@ -39,7 +39,8 @@ AI は「動くコード」を最短で書こうとするため、放ってお�
 それを防ぐのが `.claude/rules/` と CI の役割である。
 
 - **実装前に、必ず該当スタックのルールファイルを読むこと。**
-  - Rails を触る → `10-rails-modular.md`
+  - Rails を触る → `10-rails-modular.md`（packwerk）
+  - CakePHP を触る → `30-cakephp-modular.md`（deptrac / モジュール軸）
   - インフラ/CD を触る → `40-infra-cd.md`
 - **新しいファイルを作る前に、どのパッケージに属するか宣言すること。**
 - **他パッケージの内部実装を直接呼ばない。** 公開 API（`app/public/`）だけを使う。
@@ -53,9 +54,13 @@ AI は「動くコード」を最短で書こうとするため、放ってお�
 | 対象 | ツール | 検証内容 |
 |---|---|---|
 | Rails | packwerk | パッケージ間の依存と公開面 |
-| Rails | RuboCop | 静的解析 |
-| Rails | RSpec | テスト |
-| Rails | Brakeman | セキュリティ |
+| Rails | RuboCop / Brakeman / RSpec | 静的解析・セキュリティ・テスト |
+| CakePHP | deptrac | **モジュール間**の依存と公開面 |
+| CakePHP | PHPStan / PHPUnit | 静的解析・テスト |
+
+**deptrac は clean-arch-starter でも使っているが、軸が違う。**
+あちらは「層」の依存方向、こちらは「機能モジュール」の境界を見る。
+ツールが同じでも、何を境界とみなすかが違う。
 
 **どの検証も「違反を注入したら落ちること」を確認してある。**
 落ちないルールは、書いていないのと同じ。

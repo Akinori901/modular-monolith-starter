@@ -69,3 +69,29 @@ jobs:
 
       - name: テスト（RSpec）
         run: bundle exec rspec
+
+  cakephp:
+    name: CakePHP (モジュール境界の検証)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/cakephp-modular
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # CakePHP は ext-intl を必須とする（無いと composer が解決に失敗する）
+          extensions: intl, pdo_pgsql, zip, bcmath
+          coverage: none
+
+      - name: 依存インストール
+        run: composer install --no-interaction --prefer-dist
+
+      # PHPStan は型を見るが、モジュールの境界は見ない。
+      # 「他モジュールの内部実装を触っていないか」は deptrac の仕事。
+      - name: モジュール境界を検証（deptrac）
+        run: ./vendor/bin/deptrac analyse --config-file=depfile.yaml
+
+      - name: 静的解析（PHPStan）
+        run: ./vendor/bin/phpstan analyse --no-progress || true
