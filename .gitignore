@@ -26,3 +26,9 @@ docker/cognito/db/
 .DS_Store
 .idea/
 *.swp
+
+# CakePHP
+services/cakephp-modular/vendor/
+services/cakephp-modular/tmp/
+services/cakephp-modular/logs/
+services/cakephp-modular/config/app_local.php
