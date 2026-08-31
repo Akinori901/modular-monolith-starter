@@ -32,16 +32,28 @@ parameters:
       collectors:
         - type: classLike
           value: '^Identity\\Public\\.*'
+        # 例外は**公開面の一部**。呼び出し側が catch すべき型を
+        # 宣言できないと、契約として不完全になる。
+        - type: classLike
+          value: '^Identity\\Exception\\.*'
 
     - name: StoragePublic
       collectors:
         - type: classLike
           value: '^Storage\\Public\\.*'
+        # 例外は**公開面の一部**。呼び出し側が catch すべき型を
+        # 宣言できないと、契約として不完全になる。
+        - type: classLike
+          value: '^Storage\\Exception\\.*'
 
     - name: ArchivingPublic
       collectors:
         - type: classLike
           value: '^Archiving\\Public\\.*'
+        # 例外は**公開面の一部**。呼び出し側が catch すべき型を
+        # 宣言できないと、契約として不完全になる。
+        - type: classLike
+          value: '^Archiving\\Exception\\.*'
 
     # ── 各モジュールの「内部実装」────────────────────────────
     # Public 以外はすべて内部。外から参照したら違反。
@@ -51,17 +63,17 @@ parameters:
     - name: IdentityInternal
       collectors:
         - type: classLike
-          value: '^Identity\\(?!Public\\).*'
+          value: '^Identity\\(?!Public\\|Exception\\).*'
 
     - name: StorageInternal
       collectors:
         - type: classLike
-          value: '^Storage\\(?!Public\\).*'
+          value: '^Storage\\(?!Public\\|Exception\\).*'
 
     - name: ArchivingInternal
       collectors:
         - type: classLike
-          value: '^Archiving\\(?!Public\\).*'
+          value: '^Archiving\\(?!Public\\|Exception\\).*'
 
     # ── アプリ本体（Controller 等）────────────────────────────
     - name: App
@@ -104,10 +116,14 @@ parameters:
     # 直接呼ぶと認証が監査ログの都合に引きずられる。
     # 連携は Cake\Event 経由で行い、依存の向きを切る
     # （Archiving\Listener が Identity のイベントを購読する）。
+    # 内部実装は**自モジュールの例外だけ**は投げてよい。
+    # 例外を投げられないと、失敗を呼び出し側へ伝える手段が無くなる。
     IdentityInternal:
+      - IdentityPublic
       - Shared
 
     StorageInternal:
+      - StoragePublic
       - Shared
 
     # Archiving の内部実装だけは自モジュールの公開面を参照してよい。

@@ -50,6 +50,17 @@ class Application extends BaseApplication
         // Call parent to load bootstrap from files.
         parent::bootstrap();
 
+        // modules をプラグインとして登録する。
+        //
+        // これが無いと fetchTable('Identity.Users') のような
+        // **プラグイン記法でのテーブル解決ができない**。
+        // Command も検出されない（bin/cake drain_logs が "plugin load" で止まる）。
+        foreach (['Identity', 'Storage', 'Archiving'] as $module) {
+            $this->addPlugin($module . '\\' . $module . 'Plugin', [
+                'path' => dirname(__DIR__) . DS . 'modules' . DS . $module . DS,
+            ]);
+        }
+
         // By default, does not allow fallback classes.
         FactoryLocator::add(
             'Table',
@@ -93,9 +104,18 @@ class Application extends BaseApplication
 
             // Cross Site Request Forgery (CSRF) Protection Middleware
             // https://book.cakephp.org/5/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
-            ->add(new CsrfProtectionMiddleware([
+            // CSRF 対策は /api 配下に適用しない。
+            //
+            // Cookie ベースのセッションを使わず、Cognito の JWT で
+            // ステートレスに認証するため、CSRF の前提（ブラウザが
+            // 自動でクレデンシャルを送る）が成立しない。
+            // 適用すると API の POST が
+            // "Missing or incorrect CSRF cookie type" で落ちる（実際に踏んだ）。
+            ->add((new CsrfProtectionMiddleware([
                 'httponly' => true,
-            ]));
+            ]))->skipCheckCallback(function (\Cake\Http\ServerRequest $request): bool {
+                return str_starts_with($request->getPath(), '/api/');
+            }));
 
         return $middlewareQueue;
     }

@@ -3,6 +3,7 @@
 use Cake\Cache\Engine\FileEngine;
 use Cake\Database\Connection;
 use Cake\Database\Driver\Mysql;
+use Cake\Database\Driver\Postgres;
 use Cake\Log\Engine\FileLog;
 use Cake\Mailer\Transport\MailTransport;
 use function Cake\Core\env;
@@ -287,14 +288,18 @@ return [
          */
         'default' => [
             'className' => Connection::class,
-            'driver' => Mysql::class,
+            // 本リポジトリの DB は PostgreSQL。
+            // 案件で MySQL 指定が来る場合に備え、環境変数で切り替えられるようにする。
+            'driver' => env('DB_DRIVER', Postgres::class),
             'persistent' => false,
             'timezone' => 'UTC',
 
             /*
              * For MariaDB/MySQL the internal default changed from utf8 to utf8mb4, aka full utf-8 support
              */
-            'encoding' => 'utf8mb4',
+            // utf8mb4 は MySQL 固有の名前。PostgreSQL では utf8。
+            // 取り違えると client_encoding のエラーで接続できない（実際に踏んだ）。
+            'encoding' => env('DB_ENCODING', 'utf8'),
 
             /*
              * If your MySQL server is configured with `skip-character-set-client-handshake`
@@ -330,10 +335,14 @@ return [
          */
         'test' => [
             'className' => Connection::class,
-            'driver' => Mysql::class,
+            // 本リポジトリの DB は PostgreSQL。
+            // 案件で MySQL 指定が来る場合に備え、環境変数で切り替えられるようにする。
+            'driver' => env('DB_DRIVER', Postgres::class),
             'persistent' => false,
             'timezone' => 'UTC',
-            'encoding' => 'utf8mb4',
+            // utf8mb4 は MySQL 固有の名前。PostgreSQL では utf8。
+            // 取り違えると client_encoding のエラーで接続できない（実際に踏んだ）。
+            'encoding' => env('DB_ENCODING', 'utf8'),
             'flags' => [],
             'cacheMetadata' => true,
             'quoteIdentifiers' => false,

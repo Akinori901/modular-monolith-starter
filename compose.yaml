@@ -29,7 +29,9 @@ services:
     image: amazon/dynamodb-local:latest
     command: -jar DynamoDBLocal.jar -inMemory -sharedDb
     ports:
-      - "18000:8000"
+      # 18000 は他プロジェクト(fvc)が使うことがあるため 18001 にずらす。
+      # コンテナ内は 8000 のままなので、アプリの設定は変わらない。
+      - "18001:8000"
     healthcheck:
       # DynamoDB Local は認証エラー(400)を返しても「起きている」証拠になる
       test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8000 || exit 1"]
@@ -146,6 +148,46 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      dynamodb:
+        condition: service_healthy
+
+  # ── CakePHP（第2弾：モジュラモノリス）─────────────────────
+  cakephp:
+    build:
+      context: ./services/cakephp-modular
+      dockerfile: ../../docker/cakephp/Dockerfile
+      target: dev
+    command: php -S 0.0.0.0:8765 -t webroot webroot/index.php
+    environment:
+      DEBUG: "true"
+      DB_HOST: db
+      # Rails と同じ db サービスを使うが、DB 名は分ける
+      DB_NAME: app_cakephp_development
+      DB_USERNAME: app
+      DB_PASSWORD: app
+      AWS_REGION: ap-northeast-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: localsecret
+      S3_BUCKET: app-uploads
+      S3_ENDPOINT: http://storage:8333
+      DYNAMODB_TABLE: app-logs
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      COGNITO_ENDPOINT: http://cognito:9229
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-local_pool}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID:-local-client-id}
+      # cognito-local は自分の公開URL(localhost)を iss に刻む一方、
+      # コンテナからは cognito:9229 でしか到達できない。両者を分けて指定する。
+      COGNITO_ISSUER_OVERRIDE: http://localhost:19229/${COGNITO_USER_POOL_ID:-local_pool}
+      COGNITO_JWKS_URL_OVERRIDE: http://cognito:9229/${COGNITO_USER_POOL_ID:-local_pool}/.well-known/jwks.json
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./services/cakephp-modular:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      storage:
         condition: service_healthy
       dynamodb:
         condition: service_healthy

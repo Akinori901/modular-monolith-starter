@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Archiving\Public;
 
 use Archiving\Gateway\DynamoGateway;
-use Cake\Queue\QueueManager;
+use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
  * Archiving モジュールの**公開 API**。
@@ -13,6 +13,8 @@ use Cake\Queue\QueueManager;
  */
 class ArchivingApi
 {
+    use LocatorAwareTrait;
+
     /** ログの種別。文字列を直接渡させない（打ち間違いを定数で防ぐ）。 */
     public const AUDIT = 'audit';
     public const ACCESS = 'access';
@@ -46,16 +48,16 @@ class ArchivingApi
      */
     public function recordLater(string $logType, string $ownerId, array $payload): void
     {
-        QueueManager::push(
-            [\Archiving\Job\ArchiveLogJob::class, 'execute'],
-            [
-                'log_type' => $logType,
-                'owner_id' => $ownerId,
-                'payload' => $payload,
-                'occurred_at' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
-                    ->format('Y-m-d\TH:i:s.uP'),
-            ]
-        );
+        $table = $this->fetchTable('Archiving.PendingLogs');
+
+        $table->saveOrFail($table->newEntity([
+            'log_type' => $logType,
+            'owner_id' => $ownerId,
+            'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'occurred_at' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+                ->format('Y-m-d\TH:i:s.uP'),
+            'attempts' => 0,
+        ]));
     }
 
     /**

@@ -33,7 +33,9 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'paths.php';
 require CORE_PATH . 'config' . DS . 'bootstrap.php';
 
 use Cake\Cache\Cache;
+use Cake\Cache\Engine\FileEngine;
 use Cake\Core\Configure;
+use Cake\Event\EventManager;
 use Cake\Core\Configure\Engine\PhpConfig;
 use Cake\Datasource\ConnectionManager;
 use Cake\Error\ErrorTrap;
@@ -235,3 +237,28 @@ ServerRequest::addDetector('tablet', function ($request) {
 // and https://unicode-org.github.io/icu/userguide/format_parse/datetime/#datetime-format-syntax
 // \Cake\I18n\Date::setToStringFormat('dd.MM.yyyy');
 // \Cake\I18n\Time::setToStringFormat('dd.MM.yyyy HH:mm');
+
+/*
+ * 外部サービス(Cognito / S3 / DynamoDB)の設定を読み込む。
+ */
+Configure::load('aws', 'default');
+
+/*
+ * JWKS のキャッシュ設定。
+ * 都度取りに行くと Cognito のレート制限に当たり、レイテンシも増える。
+ */
+Cache::setConfig('cognito', [
+    'className' => FileEngine::class,
+    'prefix' => 'cognito_',
+    'path' => CACHE,
+    'duration' => '+12 hours',
+]);
+
+/*
+ * モジュール間のイベント購読を設定する。
+ *
+ * **依存の向きを反転させるための仕組み。**
+ * Identity は Archiving を知らないまま、Archiving 側が
+ * Identity のイベントを購読する。
+ */
+EventManager::instance()->on(new \Archiving\Listener\IdentityEventListener());
