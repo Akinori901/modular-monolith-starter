@@ -104,12 +104,20 @@ defmodule App.Archiving.DynamoGateway do
   defp decode_value(%{"L" => v}), do: Enum.map(v, &decode_value/1)
   defp decode_value(v), do: v
 
-  # Rails 版に合わせて秒以下6桁まで出す（SK の並び順を揃えるため）。
+  # **SK は文字列として並ぶため、書式が1文字でも違うと時系列が壊れる。**
+  #
+  # Elixir の DateTime.to_iso8601/1 は UTC を "Z" で終える一方、
+  # Rails / CakePHP は "+00:00" で終える。同じ app-logs テーブルを
+  # 共有しているので、混ざると新しい順の並びが崩れる
+  # （同じ瞬間でも "Z"(90) > "+"(43) で Phoenix の行だけ後ろに寄る）。
+  #
+  # 秒以下6桁 + "+00:00" に揃える。実際に混在を踏んで直した。
   defp iso8601(%DateTime{} = dt) do
     dt
     |> DateTime.shift_zone!("Etc/UTC")
     |> DateTime.truncate(:microsecond)
     |> DateTime.to_iso8601()
+    |> String.replace_suffix("Z", "+00:00")
   end
 
   # DynamoDB は数値・真偽値もそのまま扱えるが、payload の形が

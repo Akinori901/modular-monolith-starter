@@ -117,23 +117,48 @@ defmodule App.Identity.CognitoGateway do
     }
   end
 
-  # cognito-local は例外を型付きで返さない。
-  # HTTP のボディに入る __type の文字列で判定する。
-  defp classify({:http_error, _status, %{body: body}}) do
-    type =
-      case Jason.decode(body) do
-        {:ok, %{"__type" => type}} -> type |> String.split("#") |> List.last()
-        _ -> nil
-      end
+  # **エラーは型ではなく文字列で判定する。**
+  # cognito-local は例外を型付きで返さないため、
+  # 「どの例外クラスか」では分岐できない。
+  #
+  # ExAws は Cognito の JSON エラーを {"型名", "メッセージ"} に
+  # 解いて返すが、解けなかった場合は生のボディが来る。
+  # 実 Cognito とエミュレータで形が違うので、両方受ける。
+  defp classify({:error, reason}), do: classify(reason)
 
-    if type in @auth_failure_codes do
-      {:error, {:authentication_failed, "メールアドレスまたはパスワードが正しくありません"}}
+  # ExAws が解いた形（実際にローカルで返ってくるのはこれ）
+  defp classify({type, _message} = reason) when is_binary(type) do
+    if error_code(type) in @auth_failure_codes do
+      auth_failed()
     else
-      {:error, {:cognito_error, body}}
+      {:error, {:cognito_error, reason}}
+    end
+  end
+
+  # 解けなかった場合。ボディの __type を見る。
+  defp classify({:http_error, _status, %{body: body}} = reason) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"__type" => type}} ->
+        if error_code(type) in @auth_failure_codes,
+          do: auth_failed(),
+          else: {:error, {:cognito_error, reason}}
+
+      _ ->
+        {:error, {:cognito_error, reason}}
     end
   end
 
   defp classify(reason), do: {:error, {:cognito_error, reason}}
+
+  # 実 Cognito は "com.amazonaws...#NotAuthorizedException" のように
+  # 名前空間付きで返すことがある。末尾だけを見る。
+  defp error_code(type), do: type |> String.split("#") |> List.last()
+
+  # 「ユーザーが存在しない」と「パスワードが違う」を区別して返さない。
+  # 区別するとアカウント列挙に使われる。**全スタックで同一メッセージ。**
+  defp auth_failed do
+    {:error, {:authentication_failed, "メールアドレスまたはパスワードが正しくありません"}}
+  end
 
   defp put_secret_hash(params, _email, %{client_secret: nil}), do: params
   defp put_secret_hash(params, _email, %{client_secret: ""}), do: params

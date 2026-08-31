@@ -22,8 +22,10 @@ config :phoenix, :json_library, Jason
 # ── ExAws ──
 # 実際の値は config/runtime.exs で環境変数から入れる。
 # ここでは HTTP クライアントと JSON コーデックだけ固定する。
+# http_client を差し替えている理由は App.AwsHttpClient の @moduledoc を参照。
+# 同梱の ExAws.Request.Hackney は hackney 4.x の3要素応答を取りこぼす。
 config :ex_aws,
   json_codec: Jason,
-  http_client: ExAws.Request.Hackney
+  http_client: App.AwsHttpClient
 
 import_config "#{config_env()}.exs"

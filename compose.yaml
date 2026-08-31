@@ -192,7 +192,58 @@ services:
       dynamodb:
         condition: service_healthy
 
+  # ── Phoenix（第3弾：Context = FW 標準のモジュール境界）──────
+  phoenix:
+    build:
+      context: ./services/phoenix-context
+      dockerfile: ../../docker/phoenix/Dockerfile
+      target: dev
+    command: mix phx.server
+    environment:
+      # Elixir の環境名は "dev"。Rails の "development" と違うので注意
+      # （development と書くと config/development.exs を探しに行って落ちる）。
+      MIX_ENV: dev
+      PHX_SERVER: "true"
+      DB_HOST: db
+      # Rails / CakePHP と同じ db サービスを使うが、DB 名は分ける
+      DB_NAME: app_phoenix_development
+      DB_USERNAME: app
+      DB_PASSWORD: app
+      AWS_REGION: ap-northeast-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: localsecret
+      S3_BUCKET: app-uploads
+      S3_ENDPOINT: http://storage:8333
+      DYNAMODB_TABLE: app-logs
+      DYNAMODB_ENDPOINT: http://dynamodb:8000
+      COGNITO_ENDPOINT: http://cognito:9229
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-local_pool}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID:-local-client-id}
+      # cognito-local は自分の公開URL(localhost)を iss に刻む一方、
+      # コンテナからは cognito:9229 でしか到達できない。両者を分けて指定する。
+      COGNITO_ISSUER_OVERRIDE: http://localhost:19229/${COGNITO_USER_POOL_ID:-local_pool}
+      COGNITO_JWKS_URL_OVERRIDE: http://cognito:9229/${COGNITO_USER_POOL_ID:-local_pool}/.well-known/jwks.json
+    ports:
+      # 3000=Rails / 8765=CakePHP が使用済みのため 4000 番台。
+      # コンテナ内は 4000 のままなので、アプリの設定は変わらない。
+      - "4000:4000"
+    volumes:
+      - ./services/phoenix-context:/app
+      # _build と deps はイメージ側のものを使う。
+      # ホストのマウントで上書きすると、コンテナ内でビルドし直しになる。
+      - phoenix-build:/app/_build
+      - phoenix-deps:/app/deps
+    depends_on:
+      db:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      dynamodb:
+        condition: service_healthy
+
 volumes:
   db-data:
   storage-data:
   bundle-cache:
+  phoenix-build:
+  phoenix-deps:
