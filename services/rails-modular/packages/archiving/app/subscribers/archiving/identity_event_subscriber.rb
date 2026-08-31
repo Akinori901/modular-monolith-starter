@@ -34,8 +34,8 @@ module Archiving
 
     # サインイン成功は**同期**（監査ログ。失ってはならない）
     def handle_sign_in(payload)
-      Api.record!(
-        log_type: Api::AUDIT,
+      Archiving::Api.record!(
+        log_type: Archiving::Api::AUDIT,
         owner_id: payload[:user_id],
         payload: {
           event: "sign_in",
@@ -48,8 +48,8 @@ module Archiving
 
     # サインイン失敗は**非同期**（件数が読めない。攻撃時に大量発生する）
     def handle_sign_in_failure(payload)
-      Api.record_later(
-        log_type: Api::AUDIT,
+      Archiving::Api.record_later(
+        log_type: Archiving::Api::AUDIT,
         # 認証前なので user_id が無い。IP を所有者キーにする。
         owner_id: payload[:ip].presence || "unknown",
         payload: {
