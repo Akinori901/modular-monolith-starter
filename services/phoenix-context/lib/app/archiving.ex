@@ -21,7 +21,7 @@ defmodule App.Archiving do
     deps: [ExAws, ExAws.Dynamo, Logger],
     exports: [LogEntry]
 
-  alias App.Archiving.{AsyncWriter, DynamoGateway, LogEntry}
+  alias App.Archiving.{AsyncWriter, DynamoGateway, IdentityEventSubscriber, LogEntry}
 
   # ログの種別。文字列を直接渡させない（打ち間違いを関数で防ぐ）。
   @audit "audit"
@@ -87,7 +87,7 @@ defmodule App.Archiving do
   「誰が誰を購読しているか」が起動コードに散る。
   """
   @spec subscribe!() :: :ok | {:error, term()}
-  def subscribe!, do: App.Archiving.IdentityEventSubscriber.attach()
+  def subscribe!, do: IdentityEventSubscriber.attach()
 
   defp occurred_at(opts) do
     Keyword.get_lazy(opts, :occurred_at, fn -> DateTime.utc_now() end)

@@ -19,6 +19,7 @@ defmodule App.Identity.CognitoGateway do
   署名・リトライ・エンドポイント解決は ex_aws がそのまま面倒を見る。
   """
 
+  alias App.Identity.JwksCache
   alias App.Identity.Tokens
 
   # 「認証情報が正しくない」系のエラーコード。
@@ -223,7 +224,7 @@ defmodule App.Identity.CognitoGateway do
   # JWKS は都度取りに行くとレート制限に当たり、レイテンシも増える。
   # ETS のキャッシュ越しに取る。
   defp jwks(config) do
-    App.Identity.JwksCache.fetch(jwks_url(config))
+    JwksCache.fetch(jwks_url(config))
   end
 
   defp config do

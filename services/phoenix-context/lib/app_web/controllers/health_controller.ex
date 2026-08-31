@@ -9,6 +9,7 @@ defmodule AppWeb.HealthController do
   use AppWeb, :controller
 
   alias App.{Archiving, Identity, Storage}
+  alias Ecto.Adapters.SQL
 
   # 名前は Rails 版（app/controllers/api/health_controller.rb）と揃える。
   # スタックが違ってもレスポンスの形が同じであることが比較の前提。
@@ -41,7 +42,7 @@ defmodule AppWeb.HealthController do
   # `App.Repo.query` を直接書くとコンパイルが落ちる。
   # 代わりに Ecto が公開しているアダプタ API を使う。
   def check_database do
-    case Ecto.Adapters.SQL.query(App.Repo, "SELECT 1", []) do
+    case SQL.query(App.Repo, "SELECT 1", []) do
       {:ok, _} -> :ok
       {:error, reason} -> {:error, reason}
     end
