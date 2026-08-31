@@ -40,6 +40,7 @@ AI は「動くコード」を最短で書こうとするため、放ってお�
 
 - **実装前に、必ず該当スタックのルールファイルを読むこと。**
   - Rails を触る → `10-rails-modular.md`（packwerk）
+  - Phoenix を触る → `20-phoenix-context.md`（boundary / Context 軸）
   - CakePHP を触る → `30-cakephp-modular.md`（deptrac / モジュール軸）
   - インフラ/CD を触る → `40-infra-cd.md`
 - **新しいファイルを作る前に、どのパッケージに属するか宣言すること。**
@@ -55,12 +56,20 @@ AI は「動くコード」を最短で書こうとするため、放ってお�
 |---|---|---|
 | Rails | packwerk | パッケージ間の依存と公開面 |
 | Rails | RuboCop / Brakeman / RSpec | 静的解析・セキュリティ・テスト |
+| Phoenix | **boundary** | **Context 間**の依存と公開面（コンパイル時） |
+| Phoenix | Credo / ExUnit | 静的解析・テスト |
 | CakePHP | deptrac | **モジュール間**の依存と公開面 |
 | CakePHP | PHPStan / PHPUnit | 静的解析・テスト |
 
 **deptrac は clean-arch-starter でも使っているが、軸が違う。**
 あちらは「層」の依存方向、こちらは「機能モジュール」の境界を見る。
 ツールが同じでも、何を境界とみなすかが違う。
+
+**boundary だけは「別コマンド」ではなくコンパイラとして動く。**
+境界違反はコンパイル警告として出るため、
+`mix compile --warnings-as-errors` がそのまま境界検証になる。
+検証を走らせ忘れようがない代わりに、
+**このフラグを外すと検証が丸ごと素通りする**点に注意。
 
 **どの検証も「違反を注入したら落ちること」を確認してある。**
 落ちないルールは、書いていないのと同じ。
