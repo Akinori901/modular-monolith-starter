@@ -95,3 +95,74 @@ jobs:
 
       - name: 静的解析（PHPStan）
         run: ./vendor/bin/phpstan analyse --no-progress || true
+
+  phoenix:
+    name: Phoenix (Context 境界の検証)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/phoenix-context
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_phoenix_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      MIX_ENV: test
+      DB_HOST: localhost
+      DB_NAME: app_phoenix_test
+      DB_USERNAME: app
+      DB_PASSWORD: app
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.18"
+          otp-version: "28"
+
+      - name: 依存のキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: |
+            services/phoenix-context/deps
+            services/phoenix-context/_build
+          key: mix-${{ runner.os }}-${{ hashFiles('services/phoenix-context/mix.lock') }}
+          restore-keys: mix-${{ runner.os }}-
+
+      - name: 依存インストール
+        run: mix deps.get
+
+      # ── ここが本丸 ──
+      # Credo も ExUnit も「Context 境界」は見ない。
+      # 「Web 層が Context の内部モジュールを触っていないか」は
+      # 専用のツールが要る。
+      #
+      # boundary はコンパイラとして動くため、境界違反はコンパイル警告に出る。
+      # --warnings-as-errors を付けて初めて CI が落ちる形になる。
+      # **これを外すと検証が丸ごと素通りする。**
+      - name: Context 境界を検証（boundary）
+        run: mix compile --force --warnings-as-errors
+
+      - name: 未使用の依存が無いこと
+        run: mix deps.unlock --check-unused
+
+      - name: フォーマット
+        run: mix format --check-formatted
+
+      - name: 静的解析（Credo）
+        run: mix credo
+
+      - name: DB 準備
+        run: mix ecto.create && mix ecto.migrate
+
+      - name: テスト（ExUnit）
+        run: mix test
