@@ -63,7 +63,7 @@ star 数ではクリーンアーキ勢が上回るが、これは「モジュー
 |---|---|---|
 | Rails | packwerk (Shopify) | 3.3.1・現役 |
 | CakePHP | deptrac（モジュール軸で使う） | 2.0.4・現役 |
-| Phoenix | 自作チェッカ + Credo | Context 境界は FW 標準 |
+| Phoenix | **boundary** + Credo | 0.10.4・**コンパイル時に強制** |
 | （参考）C# | NetArchTest / ArchUnitNET | clean-arch 側で使う |
 
 ## 採用しないもの
@@ -79,11 +79,46 @@ star 数ではクリーンアーキ勢が上回るが、これは「モジュー
 
 本リポに入れるのは、**モジュール分割がそのフレームワークの主流解であるもの**に限る。
 
+### Phoenix は「自作チェッカ」ではなく boundary を使う（判断を更新）
+
+当初は「自作チェッカ + Credo」を想定していたが、**`boundary` を採用した**。
+
+- **コンパイラとして動く。** `mix compile --warnings-as-errors` で落ちる。
+  packwerk のような別コマンドが要らず、検証を走らせ忘れようがない
+- `deps` / `exports` が packwerk の `dependencies` / `app/public/` に
+  そのまま対応しており、**Rails 版と同じ考え方を同じ粒度で書ける**
+- 自作チェッカは「Credo のカスタムチェックで AST を見る」ことになるが、
+  それは boundary が既に、かつより厳密にやっている
+
+自作する理由が無くなったので採らない。
+
+**ただし「動いているように見えて何も検知していない」状態は避けること。**
+Rails 版で `packwerk-extensions` を入れ忘れ、`enforce_privacy` が
+黙って無視されていた事故があった。boundary でも
+`--warnings-as-errors` を外すと同じ状態になる。
+`test/boundary_test.exs` で「コンパイラが有効か」「宣言が意図どおりか」
+自体をテストしてある。
+
 ## 進め方
 
-1. **Rails を第1弾として完成させる**（本リポ）
-2. 対比が成立することを README で示す
-3. CakePHP → Phoenix の順で追加
+1. ~~**Rails を第1弾として完成させる**~~ → 完了
+2. ~~対比が成立することを README で示す~~ → 完了
+3. ~~CakePHP~~ → 完了 / ~~Phoenix~~ → **完了**
 4. **C#** はモジュール版を本リポへ、層版を clean-arch-starter へ（両方に置いて比較できる形にする）
 
 ※ Laravel / Django のモジュール版は上記の理由で作らない。
+
+### 3スタックが揃って言えるようになったこと
+
+同じ API（認証 → S3 → DynamoDB アーカイブ）を3つのやり方で実装し、
+**いずれも「境界を破ったら CI が落ちる」形にできた**。
+
+| スタック | 境界の単位 | 検証 | 実行タイミング |
+|---|---|---|---|
+| Rails | パッケージ（`packages/*`） | packwerk | 別コマンド |
+| CakePHP | モジュール（`modules/*`） | deptrac | 別コマンド |
+| **Phoenix** | **Context（FW 標準）** | **boundary** | **コンパイル時** |
+
+Phoenix だけは**フレームワーク自身が機能で切ることを前提にしている**ため、
+「規約を後から被せる」のではなく「標準の構成に強制力を足す」形になった。
+3つ並べると、本リポの主張（切り方の軸が違うだけ）が最も素直に出るのがこれ。
