@@ -1,5 +1,5 @@
 {
-    "name": "qol/cakephp-modular",
+    "name": "example/cakephp-modular",
     "description": "CakePHP のモジュラモノリス構成。モジュール境界を deptrac で機械検証する。",
     "license": "MIT",
     "type": "project",
