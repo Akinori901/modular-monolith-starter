@@ -299,15 +299,42 @@ warning: forbidden reference to App.Archiving
 
 ## AI 駆動開発での使い方
 
-`.claude/rules/` に規約を置き、CI で機械検証します。
 AI は「動くコード」を最短で書こうとするため、放っておくとパッケージ境界を貫通します。
+そこで **規約を読ませ（rules）・手順を踏ませ（skill）・CI で落とす**、の三段で縛ります。
+
+### 1. 規約を読ませる（`.claude/rules/`）
 
 | ファイル | 適用範囲 |
 |---|---|
 | [`00-core.md`](.claude/rules/00-core.md) | 全体。**他のどの指示より優先される** |
 | [`10-rails-modular.md`](.claude/rules/10-rails-modular.md) | Rails を触るとき |
 | [`20-phoenix-context.md`](.claude/rules/20-phoenix-context.md) | Phoenix を触るとき |
+| [`30-cakephp-modular.md`](.claude/rules/30-cakephp-modular.md) | CakePHP を触るとき |
 | [`40-infra-cd.md`](.claude/rules/40-infra-cd.md) | インフラ / CD を触るとき |
+
+### 2. 手順を踏ませる（`.claude/skills/scaffold-modular/`）
+
+ルールは「何が禁止か」を定めますが、**それだけでは
+AI が書き始める順序までは決まりません**。外側（Controller）から書き始めると、
+内部実装を直接呼ぶのが最短になり、境界を壊す誘因がそこで生まれます。
+
+[`scaffold-modular`](.claude/skills/scaffold-modular/SKILL.md) は、
+コードを 1 行も書く前に **どのパッケージに属するか・公開面をどう変えるか**を
+宣言させ、値の構造体 → モデル → 公開 API → 依存宣言 → Controller の順に書かせます。
+
+Claude Code では、このリポジトリで作業を頼むと自動で起動します。
+
+| ファイル | 内容 |
+|---|---|
+| [`SKILL.md`](.claude/skills/scaffold-modular/SKILL.md) | 全スタック共通の手順・禁止事項・イベント連携の作法 |
+| [`references/rails.md`](.claude/skills/scaffold-modular/references/rails.md) | packwerk・`app/public/`・雛形の所在 |
+| [`references/phoenix.md`](.claude/skills/scaffold-modular/references/phoenix.md) | boundary・`exports`・`top_level?` |
+| [`references/cakephp.md`](.claude/skills/scaffold-modular/references/cakephp.md) | deptrac・否定先読み・アウトボックス |
+
+### 3. 書かせた後に落とす（CI）
+
+ルールを読ませても、AI は時々破ります。**破ったら `make verify` が落ちます。**
+どの検証も「違反を注入したら実際に落ちること」を確認済みです。
 
 ## ライセンス
 
