@@ -187,6 +187,30 @@ make verify-<stack>
 make fmt
 ```
 
+### 境界検証だけを早く回したいとき
+
+**境界検証・静的解析は DB も Cognito も要らない。**
+ホストのポートが他プロジェクトと衝突する場合や、単に速く回したい場合は
+`--no-deps` で依存コンテナを起こさずに実行できる（実測で確認済み）。
+
+```bash
+docker compose run --rm --no-deps rails bin/packwerk validate
+docker compose run --rm --no-deps rails bin/packwerk check
+docker compose run --rm --no-deps rails bin/rubocop
+docker compose run --rm --no-deps rails bin/brakeman --no-pager -q
+docker compose run --rm --no-deps cakephp ./vendor/bin/deptrac analyse --config-file=depfile.yaml
+docker compose run --rm --no-deps -e MIX_ENV=test -e DB_NAME=app_phoenix_test phoenix \
+  mix compile --force --warnings-as-errors
+```
+
+RSpec / PHPUnit / ExUnit は DB を要するため、これらには含まれない。
+
+**「速い検証が通った」を「verify が通った」と報告しない。**
+最終確認は `make verify-<stack>` で行う。
+
+なお `deptrac` は実行するとリポジトリ追跡下の `.deptrac.cache` を書き換える。
+**コミット前に `git status` を確認すること。**
+
 **境界検証が落ちたら、まず「自分の設計が間違っている」と考える。**
 検証設定（`package.yml` / `use Boundary` の `deps`・`exports` / `depfile.yaml`）を
 緩めて通すのは最後の手段であり、**ユーザー確認なしに触らない**。

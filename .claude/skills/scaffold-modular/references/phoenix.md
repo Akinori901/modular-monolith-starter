@@ -174,3 +174,25 @@ make verify-phoenix
 **boundary はコンパイラとして動く。** 境界違反はコンパイル警告として出るため、
 `mix compile --warnings-as-errors` がそのまま境界検証になる。
 **このフラグを外すと検証が丸ごと素通りする。**
+
+### 検知されるのは「参照」であって「モジュール名の記述」ではない
+
+実測した挙動。内部モジュールを**式として書いただけ**では警告が出ない:
+
+```elixir
+def leak_test do
+  App.Identity.SignIn      # ← 警告が出ない（アトムとして評価されるだけ）
+end
+```
+
+関数呼び出し・`alias`・構造体展開など **実際の参照**になって初めて落ちる:
+
+```elixir
+_ = App.Identity.SignIn.call(email, password, meta)
+# warning: forbidden reference to App.Identity.SignIn
+#   (module App.Identity.SignIn is not exported by its owner boundary App.Identity)
+```
+
+実用上は「内部モジュールを使えば必ず落ちる」ので問題にならないが、
+**「モジュール名を書いてみて警告が出ないから参照してよい」と判断しないこと。**
+境界の可否は `exports` の宣言が決める。コンパイラの沈黙は許可ではない。
