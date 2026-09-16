@@ -35,6 +35,9 @@ AI は放っておくと最短距離で他パッケージの内部を直接呼�
 3. **既存の同種ファイルを読んでから書く。** 各スタックに identity / storage / archiving の
    3 パッケージが揃っている。それが雛形。新しい書き方を発明しない。
 4. **`make verify-<stack>` が通らないコードを「完了」と報告しない。**
+   ただし **CakePHP は verify が緑でもテストは保証されない**
+   （PHPUnit に `|| true`、CI にステップ無し、`modules/` にテスト 0 件）。
+   `references/cakephp.md` の検証節を必ず読み、テストは名指しで実行して確認すること。
 
 ## Step 1. 対象スタックを特定する
 
@@ -43,7 +46,7 @@ AI は放っておくと最短距離で他パッケージの内部を直接呼�
 | Rails (packwerk) | `services/rails-modular/` | `.claude/rules/10-rails-modular.md` | `references/rails.md` | `make verify-rails` |
 | Phoenix (Context) | `services/phoenix-context/` | `.claude/rules/20-phoenix-context.md` | `references/phoenix.md` | `make verify-phoenix` |
 | CakePHP (モジュール) | `services/cakephp-modular/` | `.claude/rules/30-cakephp-modular.md` | `references/cakephp.md` | `make verify-cakephp` |
-| インフラ / CD | `infra/`, `.github/` | `.claude/rules/40-infra-cd.md` | — | — |
+| インフラ / CD | `docker/`, `.github/workflows/` | `.claude/rules/40-infra-cd.md` | — | — |
 
 **複数スタックへ横展開する場合も、1 スタックずつ完了させる。**
 （Makefile のターゲット名は `make help` で確認する）
@@ -162,10 +165,16 @@ A が B の都合に引きずられる（各検証ツールが検知する）。
 **片方だけ変えると黙って届かなくなる。**
 
 → **イベントを追加・変更したら、両者の一致を突き合わせるテストを必ず書く。**
-既存例: `spec/packages/archiving/identity_event_subscriber_spec.rb`,
-`test/app/archiving/identity_event_subscriber_test.exs`
+
+| スタック | 既存例 |
+|---|---|
+| Rails | `spec/packages/archiving/identity_event_subscriber_spec.rb` |
+| Phoenix | `test/app/archiving/identity_event_subscriber_test.exs` |
+| CakePHP | **無し**（`modules/` にテストが 1 件も無い。`references/cakephp.md` 参照） |
 
 **依存を切ると、繋がっていることの保証は型ではなくテストが持つ。**
+CakePHP だけその保証が空いているので、ここへイベントを足すときは
+テストの追加とスイート登録までを 1 セットで行うこと。
 
 ## Step 6. ログの同期 / 非同期を使い分ける
 
