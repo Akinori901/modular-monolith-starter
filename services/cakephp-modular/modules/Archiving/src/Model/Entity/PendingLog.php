@@ -12,6 +12,8 @@ use Cake\ORM\Entity;
  * @property string $log_type
  * @property string $owner_id
  * @property string $payload
+ * @property string $occurred_at
+ * @property int $attempts
  */
 class PendingLog extends Entity
 {

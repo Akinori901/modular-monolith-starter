@@ -37,7 +37,8 @@ class CognitoGateway
         'UserNotConfirmedException',
     ];
 
-    private const JWKS_TTL = 43200; // 12h
+    // JWKS の TTL はここではなく config/bootstrap.php の Cache 設定
+    // （'cognito' の duration）が持つ。同じ値を 2 か所に置くと必ずずれる。
 
     private CognitoIdentityProviderClient $client;
 

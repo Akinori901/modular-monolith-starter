@@ -103,10 +103,18 @@ class DynamoGateway
             throw new ArchiveException('検索に失敗しました: ' . $e->getAwsErrorMessage());
         }
 
-        return array_map(
-            fn (array $item): array => $this->marshaler->unmarshalItem($item),
-            $result['Items'] ?? []
-        );
+        $items = [];
+
+        foreach ($result['Items'] ?? [] as $item) {
+            // unmarshalItem() は array|stdClass を返す（マップを
+            // オブジェクトとして解釈する設定があるため）。
+            // ここで扱うのは常に連想配列なので、明示的に寄せる。
+            $items[] = (array)$this->marshaler->unmarshalItem($item);
+        }
+
+        // array_map はキーを保つため list にならない。
+        // 呼び出し側は時系列の並びだけを見るので、詰め直して list を返す。
+        return $items;
     }
 
     /** 疎通確認（ヘルスチェック用） */

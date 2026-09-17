@@ -39,6 +39,9 @@
     "autoload-dev": {
         "psr-4": {
             "App\\Test\\": "tests/",
+            "Identity\\Test\\": "modules/Identity/tests/",
+            "Storage\\Test\\": "modules/Storage/tests/",
+            "Archiving\\Test\\": "modules/Archiving/tests/",
             "Cake\\Test\\": "vendor/cakephp/cakephp/tests/"
         }
     },

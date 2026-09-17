@@ -15,7 +15,18 @@
         <testsuite name="app">
             <directory>tests/TestCase/</directory>
         </testsuite>
-        <!-- Add plugin test suites here. -->
+        <!--
+            モジュールのテスト。
+            公開 API とイベント購読の保証はここが持つ。
+            deptrac が見るのは「境界を越えていないか」であって、
+            「イベントが実際に繋がっているか」は見られない。
+            発行側と購読側はイベント名の文字列でしか繋がっていないため、
+            その一致はテストでしか守れない。
+            新しいモジュールを足したら、ここにディレクトリを追加すること。
+        -->
+        <testsuite name="modules">
+            <directory>modules/*/tests/TestCase/</directory>
+        </testsuite>
     </testsuites>
 
     <!-- Load extension for fixtures -->

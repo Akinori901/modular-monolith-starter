@@ -23,9 +23,14 @@ class DrainLogsCommand extends Command
 
     public function execute(Arguments $args, ConsoleIo $io): int
     {
+        // fetchTable() の戻り値は汎用の Table なので、そのままだと
+        // 取り出す行が EntityInterface 扱いになり、カラムへのアクセスが
+        // 静的解析で追えなくなる。Table を明示して PendingLog を伝える。
+        /** @var \Archiving\Model\Table\PendingLogsTable $table */
         $table = $this->fetchTable('Archiving.PendingLogs');
         $gateway = new DynamoGateway();
 
+        /** @var iterable<\Archiving\Model\Entity\PendingLog> $pending */
         $pending = $table->find()
             ->where(['attempts <' => self::MAX_ATTEMPTS])
             ->orderByAsc('id')

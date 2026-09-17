@@ -20,7 +20,13 @@ class HealthController extends AppController
     public function index(): void
     {
         $components = [
-            $this->probe('database', fn () => ConnectionManager::get('default')->execute('SELECT 1')),
+            // ConnectionManager::get() の戻り値は ConnectionInterface だが、
+            // 生 SQL を投げる execute() を持つのは実体の Connection の方。
+            $this->probe('database', function (): void {
+                /** @var \Cake\Database\Connection $connection */
+                $connection = ConnectionManager::get('default');
+                $connection->execute('SELECT 1');
+            }),
             $this->probe('object_storage', fn () => (new StorageApi())->ping()),
             $this->probe('cognito', fn () => (new IdentityApi())->ping()),
             $this->probe('log_archive', fn () => (new ArchivingApi())->ping()),

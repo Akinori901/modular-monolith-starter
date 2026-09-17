@@ -5,3 +5,10 @@ parameters:
 		- config/bootstrap.php
 	paths:
 		- src/
+		# モジュールこそが境界の主戦場。ここを解析対象から外すと、
+		# 公開 API・UseCase・Gateway の型が一切見られないことになる。
+		- modules/
+	# 既知の違反をベースライン登録する場合はここへ書く（ignoreErrors）。
+	# ただし**新規の違反は追加しないこと** — 減らしていく対象であって
+	# 逃げ道ではない。deptrac の skip_violations と同じ運用。
+	# 現状は空のまま維持できている（= 完全準拠）。
