@@ -84,6 +84,23 @@ value: '^Identity\\(?!Public\\|Exception\\).*'
 
 これが無いと `Identity\Public` も Internal に含まれ、判定が壊れる。
 
+## テストの置き場所（モジュール側に置く）
+
+```
+modules/<Name>/tests/TestCase/...
+```
+
+`tests/TestCase/`（アプリ本体）とは**別のスイート**になっている。
+
+| スイート | 対象 |
+|---|---|
+| `--testsuite=app` | `tests/TestCase/`（アプリ本体） |
+| `--testsuite=modules` | `modules/*/tests/TestCase/` |
+
+**新しいモジュールを足したら `composer.json` の `autoload-dev` に
+`<Name>\Test\` を追加すること。** 追加しないとテストクラスが解決されず、
+「書いたのに実行されない」状態になる。
+
 ## モジュール間はイベントで繋ぐ
 
 `Identity` が `Archiving` を直接呼ぶと、依存が生まれて認証が
@@ -103,6 +120,20 @@ Archiving --Listener で購読 ---------------------+
 - 購読者を増やしても `Identity` は変わらない
 
 **両者の接点はイベント名の文字列だけ**になる。
+
+### 疎結合の代金（必ず払うこと）
+
+イベント名は**発行側と購読側に別々に書かれる**（参照し合うと依存が生まれるため）。
+発行側の定数は `Identity\UseCase\SignInUseCase`（内部実装）にあり、
+購読側からは参照できない。**片方だけ変えると黙って届かなくなる。**
+
+deptrac が見るのは「境界を越えていないか」であって、
+「イベントが実際に繋がっているか」は見られない。
+
+→ **イベントを追加・変更したら、両者の一致を突き合わせるテストを必ず書く。**
+既存例: `modules/Archiving/tests/TestCase/Listener/IdentityEventListenerTest.php`
+
+**依存を切ると、繋がっていることの保証は型ではなくテストが持つ。**
 
 ## 非同期アーカイブはアウトボックス方式
 

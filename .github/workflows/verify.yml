@@ -93,8 +93,19 @@ jobs:
       - name: モジュール境界を検証（deptrac）
         run: ./vendor/bin/deptrac analyse --config-file=depfile.yaml
 
+      # --memory-limit は必須。既定の 128M ではワーカーがクラッシュし、
+      # 型エラーではなく「PHPStan process crashed」で解析が完走しない。
       - name: 静的解析（PHPStan）
-        run: ./vendor/bin/phpstan analyse --no-progress || true
+        run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+
+      # deptrac は「境界を越えていないか」を見るが、
+      # 「イベントが実際に繋がっているか」は見られない。
+      # 発行側と購読側はイベント名の文字列でしか繋がっていないため、
+      # その一致を守れるのはテストだけ。**ここを省くと規約が強制力を失う。**
+      - name: テスト（PHPUnit）
+        run: |
+          ./vendor/bin/phpunit --testsuite=app
+          ./vendor/bin/phpunit --testsuite=modules
 
   phoenix:
     name: Phoenix (Context 境界の検証)

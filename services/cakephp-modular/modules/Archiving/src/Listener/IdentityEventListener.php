@@ -38,7 +38,14 @@ class IdentityEventListener implements EventListenerInterface
         ];
     }
 
-    /** サインイン成功は**同期**（監査ログ。失ってはならない） */
+    /**
+     * サインイン成功は**同期**（監査ログ。失ってはならない）
+     *
+     * 発行元の型は問わない。Identity 側の具象を書くと依存が生まれるため、
+     * 総称パラメータは object のままにしておく。
+     *
+     * @param \Cake\Event\EventInterface<object> $event
+     */
     public function onSignIn(EventInterface $event): void
     {
         $data = $event->getData();
@@ -51,7 +58,11 @@ class IdentityEventListener implements EventListenerInterface
         ]);
     }
 
-    /** サインイン失敗は**非同期**（攻撃時に大量発生するため） */
+    /**
+     * サインイン失敗は**非同期**（攻撃時に大量発生するため）
+     *
+     * @param \Cake\Event\EventInterface<object> $event
+     */
     public function onSignInFailure(EventInterface $event): void
     {
         $data = $event->getData();

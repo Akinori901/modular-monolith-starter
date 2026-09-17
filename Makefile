@@ -40,12 +40,22 @@ migrate: ## DB マイグレーション（各スタックとも DB 名は分け�
 ## ── 検証（CI と同じ内容）──────────────────────────────────
 verify: verify-rails verify-cakephp verify-phoenix ## パッケージ境界の検証 + 静的解析 + テスト
 
-verify-cakephp: ## CakePHP: モジュール境界検証(deptrac) + 静的解析 + テスト
+verify-cakephp: ## CakePHP: モジュール境界検証(deptrac) + PHPStan + PHPUnit
 	@echo "==> CakePHP モジュール境界検証"
 	# deptrac が「他モジュールの内部実装を触っていないか」を落とす。
 	# 層ではなくモジュールの軸で見ている点が clean-arch-starter との違い。
 	$(DC) run --rm cakephp ./vendor/bin/deptrac analyse --config-file=depfile.yaml
-	$(DC) run --rm cakephp ./vendor/bin/phpunit --testsuite=app || true
+	@echo "==> 静的解析"
+	# --memory-limit は必須。既定の 128M ではワーカーがクラッシュし、
+	# 型エラーではなく「PHPStan process crashed」で解析が完走しない。
+	$(DC) run --rm cakephp ./vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+	@echo "==> テスト"
+	# **|| true を付けないこと。** 付けるとテストが落ちても verify が緑になり、
+	# 「イベント名の突き合わせテストを必ず書く」という規約が強制力を失う。
+	# deptrac は境界を越えていないかを見るが、イベントが実際に繋がっているかは見ない。
+	# 発行側と購読側は文字列でしか繋がっていないため、そこはテストだけが守れる。
+	$(DC) run --rm cakephp ./vendor/bin/phpunit --testsuite=app
+	$(DC) run --rm cakephp ./vendor/bin/phpunit --testsuite=modules
 
 verify-rails: ## Rails: パッケージ境界(packwerk) + RuboCop + RSpec + Brakeman
 	@echo "==> パッケージ境界の検証"

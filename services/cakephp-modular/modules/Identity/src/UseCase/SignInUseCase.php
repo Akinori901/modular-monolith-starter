@@ -76,6 +76,10 @@ class SignInUseCase
 
     private function resolveUser(string $subject, string $email): User
     {
+        // fetchTable() の戻り値は汎用の Table なので、そのままだと
+        // newEntity() が EntityInterface を返す扱いになる。
+        // Table を明示して User が伝わるようにする。
+        /** @var \Identity\Model\Table\UsersTable $users */
         $users = $this->fetchTable('Identity.Users');
 
         /** @var \Identity\Model\Entity\User|null $existing */
@@ -84,6 +88,7 @@ class SignInUseCase
             return $existing;
         }
 
+        /** @var \Identity\Model\Entity\User $user */
         $user = $users->newEntity([
             'email' => $email,
             'display_name' => explode('@', $email)[0],
