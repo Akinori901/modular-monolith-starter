@@ -35,9 +35,6 @@ AI は放っておくと最短距離で他パッケージの内部を直接呼�
 3. **既存の同種ファイルを読んでから書く。** 各スタックに identity / storage / archiving の
    3 パッケージが揃っている。それが雛形。新しい書き方を発明しない。
 4. **`make verify-<stack>` が通らないコードを「完了」と報告しない。**
-   ただし **CakePHP は verify が緑でもテストは保証されない**
-   （PHPUnit に `|| true`、CI にステップ無し、`modules/` にテスト 0 件）。
-   `references/cakephp.md` の検証節を必ず読み、テストは名指しで実行して確認すること。
 
 ## Step 1. 対象スタックを特定する
 
@@ -170,11 +167,9 @@ A が B の都合に引きずられる（各検証ツールが検知する）。
 |---|---|
 | Rails | `spec/packages/archiving/identity_event_subscriber_spec.rb` |
 | Phoenix | `test/app/archiving/identity_event_subscriber_test.exs` |
-| CakePHP | **無し**（`modules/` にテストが 1 件も無い。`references/cakephp.md` 参照） |
+| CakePHP | `modules/Archiving/tests/TestCase/Listener/IdentityEventListenerTest.php` |
 
 **依存を切ると、繋がっていることの保証は型ではなくテストが持つ。**
-CakePHP だけその保証が空いているので、ここへイベントを足すときは
-テストの追加とスイート登録までを 1 セットで行うこと。
 
 ## Step 6. ログの同期 / 非同期を使い分ける
 
@@ -212,7 +207,12 @@ docker compose run --rm --no-deps -e MIX_ENV=test -e DB_NAME=app_phoenix_test ph
   mix compile --force --warnings-as-errors
 ```
 
-RSpec / PHPUnit / ExUnit は DB を要するため、これらには含まれない。
+RSpec / ExUnit は DB を要するため、これらには含まれない。
+CakePHP の PHPUnit は DB 無しで通る（Gateway を Fake に差し替えているため）。
+
+```bash
+docker compose run --rm --no-deps cakephp ./vendor/bin/phpunit --testsuite=modules
+```
 
 **「速い検証が通った」を「verify が通った」と報告しない。**
 最終確認は `make verify-<stack>` で行う。
