@@ -41,8 +41,8 @@ jobs:
       DB_PASSWORD: app
 
     steps:
-      - uses: actions/checkout@v5
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1
         with:
           ruby-version: "3.4"
           bundler-cache: true
@@ -77,8 +77,8 @@ jobs:
       run:
         working-directory: services/cakephp-modular
     steps:
-      - uses: actions/checkout@v5
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.4'
           # CakePHP は ext-intl を必須とする（無いと composer が解決に失敗する）
@@ -134,14 +134,14 @@ jobs:
       DB_PASSWORD: app
 
     steps:
-      - uses: actions/checkout@v5
-      - uses: erlef/setup-beam@v1
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
         with:
           elixir-version: "1.18"
           otp-version: "28"
 
       - name: 依存のキャッシュ
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             services/phoenix-context/deps
