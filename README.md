@@ -338,4 +338,4 @@ Claude Code では、このリポジトリで作業を頼むと自動で起動�
 
 ## ライセンス
 
-MIT
+[MIT](LICENSE)
