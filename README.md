@@ -11,7 +11,7 @@
   <img alt="deptrac" src="https://img.shields.io/badge/deptrac-境界検証-2ea44f">
   <img alt="Phoenix" src="https://img.shields.io/badge/Phoenix_1.8-Context-FD4F00?logo=elixir&logoColor=white">
   <img alt="boundary" src="https://img.shields.io/badge/boundary-境界検証-2ea44f">
-  <img alt="AWS" src="https://img.shields.io/badge/AWS-Lambda_/_DynamoDB-232F3E?logo=amazonwebservices&logoColor=white">
+  <img alt="AWS SDK" src="https://img.shields.io/badge/AWS_SDK-S3_/_DynamoDB_/_Cognito-232F3E?logo=amazonwebservices&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
 </p>
 
@@ -125,6 +125,10 @@ GET  /api/health           DB / S3 / Cognito / DynamoDB の疎通
 ローカルと本番で**同じ SDK・同じコードパス**を通します。
 差分は環境変数（エンドポイント URL）だけで吸収し、
 アプリコードに `if Rails.env.development?` を書きません。
+
+> **AWS 列は「本番で置き換える先」です。** このリポジトリに含まれるのは、
+> ローカルのエミュレータ（SeaweedFS・DynamoDB Local・cognito-local）に対して
+> AWS SDK で同じコードパスを通すところまでで、IaC とデプロイのワークフローは含みません。
 
 ## クイックスタート
 
