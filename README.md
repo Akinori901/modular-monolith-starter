@@ -7,10 +7,11 @@
 <p>
   <img alt="Ruby / Rails" src="https://img.shields.io/badge/Rails_8.1-modular_monolith-CC0000?logo=rubyonrails&logoColor=white">
   <img alt="packwerk" src="https://img.shields.io/badge/packwerk-境界検証-2ea44f">
-  <img alt="CakePHP" src="https://img.shields.io/badge/CakePHP-予定-D33C43?logo=cakephp&logoColor=white">
+  <img alt="CakePHP" src="https://img.shields.io/badge/CakePHP_5.4-modules-D33C43?logo=cakephp&logoColor=white">
+  <img alt="deptrac" src="https://img.shields.io/badge/deptrac-境界検証-2ea44f">
   <img alt="Phoenix" src="https://img.shields.io/badge/Phoenix_1.8-Context-FD4F00?logo=elixir&logoColor=white">
   <img alt="boundary" src="https://img.shields.io/badge/boundary-境界検証-2ea44f">
-  <img alt="AWS" src="https://img.shields.io/badge/AWS-Lambda_/_DynamoDB-232F3E?logo=amazonwebservices&logoColor=white">
+  <img alt="AWS SDK" src="https://img.shields.io/badge/AWS_SDK-S3_/_DynamoDB_/_Cognito-232F3E?logo=amazonwebservices&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
 </p>
 
@@ -43,7 +44,7 @@ Rails の恩恵（マイグレーション・アソシエーション・スコ�
 | スタック | 構成 | 検証ツール | 状態 |
 |---|---|---|---|
 | **Rails 8.1** | packwerk モジュラモノリス | packwerk | ✅ |
-| CakePHP | モジュール + deptrac | deptrac | 予定 |
+| **CakePHP 5.4** | Plugin 単位のモジュール | **deptrac** | ✅ |
 | **Phoenix 1.8** | **Context**（FW 標準の境界） | **boundary** | ✅ |
 
 → 選定の根拠は [docs/design-decision.md](docs/design-decision.md)
@@ -124,6 +125,10 @@ GET  /api/health           DB / S3 / Cognito / DynamoDB の疎通
 ローカルと本番で**同じ SDK・同じコードパス**を通します。
 差分は環境変数（エンドポイント URL）だけで吸収し、
 アプリコードに `if Rails.env.development?` を書きません。
+
+> **AWS 列は「本番で置き換える先」です。** このリポジトリに含まれるのは、
+> ローカルのエミュレータ（SeaweedFS・DynamoDB Local・cognito-local）に対して
+> AWS SDK で同じコードパスを通すところまでで、IaC とデプロイのワークフローは含みません。
 
 ## クイックスタート
 
@@ -297,6 +302,59 @@ warning: forbidden reference to App.Archiving
 > `test/boundary_test.exs` で「コンパイラが有効か」「宣言が意図どおりか」
 > 自体もテストしています。
 
+## 構成（CakePHP）— Plugin をモジュールにする
+
+CakePHP の Plugin は、名前空間・Table・ルートを丸ごと持てる単位です。
+これを機能モジュールとして使い、**`Public\` 名前空間に置いたものだけを外へ見せます**
+（packwerk の `public/`、boundary の `exports` に相当）。
+
+```
+services/cakephp-modular/
+├── src/Controller/Api/      # アプリ本体。各モジュールの Public だけを呼ぶ
+└── modules/
+    ├── Shared/              # 共有基盤（依存先なし）
+    ├── Identity/src/
+    │   ├── Public/IdentityApi.php   # ★ 公開面
+    │   ├── Exception/               # ★ 公開面（呼び出し側が catch する型）
+    │   ├── Model/  UseCase/  Service/  Gateway/   # 内部実装
+    ├── Storage/src/   （同じ構成）
+    └── Archiving/src/ （同じ構成 + Listener）
+```
+
+### モジュール同士は直接呼ばない
+
+内部実装は他モジュールを一切参照できません。
+Identity のログインを Archiving に記録したいときは **`Cake\Event` で繋ぎます**
+（`Archiving\Listener` が Identity のイベントを購読する）。
+直接呼ぶと、認証が監査ログの都合に引きずられるためです。
+
+## モジュール境界の検証（deptrac）
+
+clean-arch-starter の Laravel 版と**同じ deptrac を、層ではなくモジュールの軸で**使っています。
+`depfile.yaml` は「各モジュールの公開面」と「内部実装」を別レイヤーにし、
+アプリ本体と他モジュールからは公開面だけを許可します。
+
+```bash
+$ make verify-cakephp     # deptrac → PHPStan → PHPUnit
+ -------------------- -----
+  Violations           0
+  Skipped violations   0
+ -------------------- -----
+```
+
+### 違反すると落ちます
+
+**この検証は実際に機能することを確認済みです。**
+Controller から `Identity\Public\IdentityApi` ではなく内部の `UsersTable` を直接使うと:
+
+```
+DependsOnDisallowedLayer   App\Controller\Api\HealthController must not depend on Identity\Model\Table\UsersTable
+                           You are depending on token that is a part of a layer that you are not allowed to depend on. (IdentityInternal)
+  Violations           1
+```
+
+戻すと 0 件に戻ります。既知の違反をベースラインに登録する `skip_violations` は**空のまま**です。
+
 ## AI 駆動開発での使い方
 
 AI は「動くコード」を最短で書こうとするため、放っておくとパッケージ境界を貫通します。
@@ -338,4 +396,4 @@ Claude Code では、このリポジトリで作業を頼むと自動で起動�
 
 ## ライセンス
 
-MIT
+[MIT](LICENSE)

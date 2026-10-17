@@ -1,0 +1,8 @@
+# action をコミット SHA で固定しているので、更新は Dependabot に任せる
+# （SHA の横のコメントのタグも一緒に書き換えてくれる）。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
